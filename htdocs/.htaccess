@@ -1,0 +1,3 @@
+# Désactive la vérification de cookies d'InfinityFree (si possible)
+php_value session.cookie_path /
+php_value session.name PHPSESSID
