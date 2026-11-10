@@ -1,35 +1,32 @@
 <?php
-session_start();
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/helpers.php';
+require_admin();
 
-if (!isset($_SESSION['admin_logged'])) {
-    header('Location: login.php');
-    exit;
-}
-
-$pdo = getPDO();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $date = $_POST['date'] ?? '';
-    $heure = $_POST['heure'] ?? '';
+    csrf_check();
+
+    $date = trim((string) ($_POST['date'] ?? ''));
+    $heure = trim((string) ($_POST['heure'] ?? ''));
     $disponible = isset($_POST['disponible']) ? 1 : 0;
 
-    if ($date && $heure) {
-        $stmt = $pdo->prepare("INSERT INTO creneaux (date, heure, disponible) VALUES (?, ?, ?)");
+    if (!is_valid_date($date) || !is_valid_time($heure)) {
+        $error = 'Merci de saisir une date et une heure valides.';
+    } else {
+        $stmt = getPDO()->prepare("INSERT INTO creneaux (date, heure, disponible) VALUES (?, ?, ?)");
         $stmt->execute([$date, $heure, $disponible]);
         header('Location: creneaux.php');
         exit;
-    } else {
-        $error = 'Veuillez remplir la date et l’heure';
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex">
 <title>Ajouter un créneau</title>
 <style>
 body { font-family: Arial; padding:20px; background:#f9f9f9; }
@@ -42,9 +39,10 @@ button:hover { background:#0056b3; }
 </head>
 <body>
 <h1>Ajouter un créneau</h1>
-<?php if($error) echo "<p class='error'>$error</p>"; ?>
+<?php if ($error): ?><p class="error"><?= e($error) ?></p><?php endif; ?>
 
 <form method="post">
+    <?= csrf_field() ?>
     <label>Date :</label><br>
     <input type="date" name="date" required><br>
     <label>Heure :</label><br>

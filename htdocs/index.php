@@ -1,21 +1,19 @@
 <?php
 require_once __DIR__ . '/config.php';
-date_default_timezone_set('Europe/Paris');
+require_once __DIR__ . '/includes/helpers.php';
 $pdo = getPDO();
 
-// Récupérer TOUS les créneaux disponibles
-$today = date("Y-m-d");
-
-$stmt = $pdo->prepare("SELECT * FROM creneaux 
-                       WHERE disponible = 1 
-                       AND date >= :today
+// Créneaux disponibles à venir (les créneaux d'aujourd'hui déjà passés sont masqués)
+$stmt = $pdo->prepare("SELECT id, date, heure FROM creneaux
+                       WHERE disponible = 1
+                       AND (date > :today OR (date = :today2 AND heure > :now))
                        ORDER BY date ASC, heure ASC");
-$stmt->execute(['today' => $today]);
-
-$creneaux = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Activer les dates françaises
-setlocale(LC_TIME, 'fr_FR.UTF-8', 'fr_FR', 'fra');
+$stmt->execute([
+    'today'  => date('Y-m-d'),
+    'today2' => date('Y-m-d'),
+    'now'    => date('H:i:s'),
+]);
+$creneaux = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -210,13 +208,17 @@ function toggleCreneaux() {
     <!-- CRENEAUX -->
     <h1>Créneaux Disponibles</h1>
 
+    <?php if (!$creneaux): ?>
+        <p>Aucun créneau disponible pour le moment. Écris-moi sur Instagram pour en savoir plus 💌</p>
+    <?php endif; ?>
+
     <ul>
         <?php foreach($creneaux as $index => $c): ?>
             <li class="slot <?= $index >= 5 ? 'hidden' : '' ?>">
                 <span class="slot-info">
-                    <?= ucfirst(strftime('%A %d %B %Y', strtotime($c['date']))) ?> à <?= $c['heure'] ?>
+                    <?= e(date_fr($c['date'])) ?> à <?= e(heure_fr($c['heure'])) ?>
                 </span>
-                <a href="reserver.php?id=<?= $c['id'] ?>" class="button">Réserver</a>
+                <a href="reserver.php?id=<?= (int) $c['id'] ?>" class="button">Réserver</a>
             </li>
         <?php endforeach; ?>
     </ul>

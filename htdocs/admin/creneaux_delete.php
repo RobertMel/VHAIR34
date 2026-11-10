@@ -1,17 +1,18 @@
 <?php
-session_start();
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/helpers.php';
+require_admin();
 
-if (!isset($_SESSION['admin_logged'])) {
-    header('Location: login.php');
-    exit;
+// Suppression uniquement par formulaire POST protégé : un simple lien ne peut plus supprimer un créneau
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Méthode non autorisée.');
 }
+csrf_check();
 
-$id = $_GET['id'] ?? '';
-$pdo = getPDO();
-
+$id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 if ($id) {
-    $stmt = $pdo->prepare("DELETE FROM creneaux WHERE id=?");
+    $stmt = getPDO()->prepare("DELETE FROM creneaux WHERE id = ?");
     $stmt->execute([$id]);
 }
 

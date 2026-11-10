@@ -1,12 +1,7 @@
 <?php
 require_once __DIR__ . '/../config.php';
-session_start();
-
-// Vérification si admin connecté
-if (!isset($_SESSION['admin_logged']) || $_SESSION['admin_logged'] !== true) {
-    header('Location: login.php');
-    exit;
-}
+require_once __DIR__ . '/../includes/helpers.php';
+require_admin();
 
 $pdo = getPDO();
 
@@ -19,6 +14,7 @@ $creneaux = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex">
 <title>Dashboard Admin</title>
 <link rel="stylesheet" href="/assets/style.css?v=<?=time()?>">
 <style>
@@ -31,11 +27,11 @@ tr:nth-child(even) { background: #fff8dc; }
 <body>
 <div class="container">
     <h1>Dashboard Admin</h1>
-    <p>Bienvenue, <?= $_SESSION['admin_user'] ?> | <a href="logout.php">Déconnexion</a></p>
+    <p>Bienvenue, <?= e($_SESSION['admin_user'] ?? '') ?> | <a href="logout.php">Déconnexion</a></p>
 
     <!-- Bouton Ajouter un créneau -->
     <p>
-        <a href="creneaux.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Ajouter un créneau</a>
+        <a href="creneaux.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Gérer les créneaux</a>
     </p>
 
     <h2>Liste des créneaux et réservations</h2>
@@ -54,13 +50,13 @@ tr:nth-child(even) { background: #fff8dc; }
         <tbody>
             <?php foreach($creneaux as $c): ?>
             <tr>
-                <td><?= $c['id'] ?></td>
-                <td><?= $c['date'] ?></td>
-                <td><?= $c['heure'] ?></td>
+                <td><?= e($c['id']) ?></td>
+                <td><?= e($c['date']) ?></td>
+                <td><?= e($c['heure']) ?></td>
                 <td><?= $c['disponible'] ? 'Oui' : 'Réservé' ?></td>
-                <td><?= $c['nom_client'] ?? '-' ?></td>
-                <td><?= $c['telephone'] ?? '-' ?></td>
-                <td><?= $c['prestation'] ?? '-' ?></td>
+                <td><?= e($c['nom_client'] ?? '-') ?></td>
+                <td><?= e($c['telephone'] ?? '-') ?></td>
+                <td><?= e($c['prestation'] ?? '-') ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>

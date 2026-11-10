@@ -11,8 +11,14 @@ Site de réservation de créneaux pour V.Hair_34, coiffeuse à Montpellier (pony
   - `index.php` : accueil, prestations, charte, créneaux disponibles
   - `reserver.php` : formulaire de réservation
   - `admin/` : espace admin (connexion, gestion des créneaux)
+  - `includes/helpers.php` : session, échappement HTML, protection CSRF, dates en français
+  - `includes/prestations.php` : liste des prestations du formulaire de réservation (à modifier ici)
 - `ancienne-maquette-html/` : premier prototype statique (localStorage), conservé pour référence
 
 ## Installation
 1. Copier `htdocs/config.example.php` en `htdocs/config.php`
 2. Renseigner les identifiants MySQL dans `config.php` (ce fichier n'est jamais versionné)
+
+## Déploiement sur InfinityFree
+Envoyer tout le contenu de `htdocs/` dans le dossier `htdocs/` de l'hébergement (FTP ou gestionnaire de fichiers),
+**y compris `config.php`** qui n'est que sur ta machine.

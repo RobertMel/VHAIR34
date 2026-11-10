@@ -1,50 +1,46 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-?>
-
-
-<?php
-session_start();
 require_once __DIR__ . '/../config.php';
-
-if (!isset($_SESSION['admin_logged'])) {
-    header('Location: login.php');
-    exit;
-}
+require_once __DIR__ . '/../includes/helpers.php';
+require_admin();
 
 $pdo = getPDO();
 $error = '';
-$id = $_GET['id'] ?? '';
 
-$stmt = $pdo->prepare("SELECT * FROM creneaux WHERE id=?");
-$stmt->execute([$id]);
-$creneau = $stmt->fetch(PDO::FETCH_ASSOC);
+$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+$creneau = false;
+if ($id) {
+    $stmt = $pdo->prepare("SELECT * FROM creneaux WHERE id = ?");
+    $stmt->execute([$id]);
+    $creneau = $stmt->fetch();
+}
 
 if (!$creneau) {
-    die("Créneau introuvable");
+    http_response_code(404);
+    exit('Créneau introuvable');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $date = $_POST['date'] ?? '';
-    $heure = $_POST['heure'] ?? '';
+    csrf_check();
+
+    $date = trim((string) ($_POST['date'] ?? ''));
+    $heure = trim((string) ($_POST['heure'] ?? ''));
     $disponible = isset($_POST['disponible']) ? 1 : 0;
 
-    if ($date && $heure) {
-        $stmt = $pdo->prepare("UPDATE creneaux SET date=?, heure=?, disponible=? WHERE id=?");
+    if (!is_valid_date($date) || !is_valid_time($heure)) {
+        $error = 'Merci de saisir une date et une heure valides.';
+    } else {
+        $stmt = $pdo->prepare("UPDATE creneaux SET date = ?, heure = ?, disponible = ? WHERE id = ?");
         $stmt->execute([$date, $heure, $disponible, $id]);
         header('Location: creneaux.php');
         exit;
-    } else {
-        $error = 'Veuillez remplir la date et l’heure';
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex">
 <title>Modifier un créneau</title>
 <style>
 body { font-family: Arial; padding:20px; background:#f9f9f9; }
@@ -57,13 +53,14 @@ button:hover { background:#0056b3; }
 </head>
 <body>
 <h1>Modifier le créneau</h1>
-<?php if($error) echo "<p class='error'>$error</p>"; ?>
+<?php if ($error): ?><p class="error"><?= e($error) ?></p><?php endif; ?>
 
 <form method="post">
+    <?= csrf_field() ?>
     <label>Date :</label><br>
-    <input type="date" name="date" value="<?= $creneau['date'] ?>" required><br>
+    <input type="date" name="date" value="<?= e($creneau['date']) ?>" required><br>
     <label>Heure :</label><br>
-    <input type="time" name="heure" value="<?= $creneau['heure'] ?>" required><br>
+    <input type="time" name="heure" value="<?= e(substr((string) $creneau['heure'], 0, 5)) ?>" required><br>
     <label>
         <input type="checkbox" name="disponible" <?= $creneau['disponible'] ? 'checked' : '' ?>> Disponible
     </label><br><br>
