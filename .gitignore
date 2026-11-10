@@ -1,0 +1,8 @@
+# Identifiants de la base (ne jamais publier)
+htdocs/config.php
+
+# Dumps de base : contiennent des données clientes
+*.sql
+
+# macOS
+.DS_Store

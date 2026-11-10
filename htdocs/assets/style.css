@@ -1,0 +1,315 @@
+/* Police Google Fonts pour un style élégant */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500&display=swap');
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #fff8e7; /* fond doré clair */
+    color: #222;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+    text-align: center;
+    color: #b8860b; /* rappel couleur or */
+}
+
+h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.service {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.service p {
+    margin: 6px 0;
+    line-height: 1.5;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+.slot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.slot:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+.slot-info {
+    font-weight: 500;
+}
+
+.button {
+    padding: 8px 16px;
+    background: #222;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.button:hover {
+    background: #b8860b;
+    color: #fff;
+}
+/* Formulaire réservation */
+.reservation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reservation-form input,
+.reservation-form select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.reservation-form select {
+    background: white;
+    color: black;
+}
+
+.reservation-form label {
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.success-message {
+    padding: 10px;
+    background: #28a745;
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.button {
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: black;
+    color: gold;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: background 0.3s, color 0.3s;
+}
+
+.button:hover {
+    background: gold;
+    color: black;
+}
+
+.service {
+    background: #fff8dc; /* très clair doré */
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+/* Logo Instagram fixe */
+.instagram-logo {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 50px; /* taille du logo */
+    height: 50px;
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 999;
+    cursor: pointer;
+}
+
+.instagram-logo img {
+    width: 60%;
+    height: 60%;
+}
+
+
+/* --- Message de bienvenue version premium --- */
+
+.welcome-box {
+    padding: 25px;
+    margin-bottom: 40px;
+    border-left: 4px solid #d4af37; /* Doré sobre */
+    background: rgba(255, 255, 255, 0.1); /* voile léger transparent */
+    border-radius: 10px;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25); /* ombre dorée douce */
+    backdrop-filter: blur(3px);
+}
+
+/* Style pour le message de bienvenue */
+.welcome-message {
+    background: #FFF8E1; /* fond doré très clair */
+    border-left: 6px solid #FFD700; /* bordure dorée */
+    padding: 25px 30px;
+    margin-bottom: 30px;
+    border-radius: 12px;
+    font-family: 'Georgia', serif;
+    color: #333;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+    font-size: 1.15rem;
+    line-height: 1.8;
+    position: relative;
+    max-width: 900px;
+}
+
+.welcome-message::before {
+    content: "🌸";
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-size: 1.8rem;
+}
+
+.welcome-message h1 {
+    font-size: 2rem;
+    color: #B8860B; /* titre doré */
+    margin-bottom: 15px;
+}
+
+.welcome-message p {
+    margin-bottom: 15px; /* ajoute de l'espace entre les phrases */
+    text-align: justify; /* texte justifié */
+}
+
+/* Style pour la charte de fonctionnement */
+.charte {
+    background: #fff3e0; /* léger fond beige/or clair */
+    border-left: 4px solid #FFD700; /* bordure or */
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    font-family: 'Georgia', serif;
+    color: #333;
+}
+
+.charte h2 {
+    color: #B8860B; /* titre en doré foncé */
+    margin-bottom: 15px;
+}
+
+.charte h3 {
+    color: #DAA520; /* sous-titres en or plus clair */
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.charte p, .charte ul {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.charte ul {
+    padding-left: 20px;
+}
+
+.charte li {
+    list-style: disc;
+}
+/* Fond sombre derrière le pop-up */
+.success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Le boîtier du message */
+.success-pop-up {
+    background: #1a1a1a; /* Fond sombre élégant */
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    color: white;
+}
+
+.pop-up-icon {
+    font-size: 50px;
+    margin-bottom: 15px;
+}
+
+/* Le bouton Instagram stylé */
+.insta-confirm-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 15px 30px;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    color: white !important;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 16px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.insta-confirm-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(220, 39, 67, 0.4);
+}
+
+/* Animation d'apparition */
+.fade-in {
+    animation: fadeInPop 0.5s ease-out;
+}
+
+@keyframes fadeInPop {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+

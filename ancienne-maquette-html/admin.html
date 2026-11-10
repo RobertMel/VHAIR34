@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Ajouter un créneau</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <h1>Ajouter un créneau</h1>
+
+  <form id="add-creneau-form">
+    <input type="date" name="date" required>
+    <input type="time" name="heure" required>
+
+    <label>
+      <input type="checkbox" name="disponible" checked>
+      Disponible
+    </label>
+
+    <button type="submit">Ajouter</button>
+  </form>
+
+  <p><a href="index.html">⬅ Retour aux créneaux</a></p>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
