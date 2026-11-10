@@ -29,9 +29,10 @@ tr:nth-child(even) { background: #fff8dc; }
     <h1>Dashboard Admin</h1>
     <p>Bienvenue, <?= e($_SESSION['admin_user'] ?? '') ?> | <a href="logout.php">Déconnexion</a></p>
 
-    <!-- Bouton Ajouter un créneau -->
-    <p>
+    <!-- Accès à la gestion des créneaux et des prestations -->
+    <p style="display:flex; flex-wrap:wrap; gap:10px;">
         <a href="creneaux.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Gérer les créneaux</a>
+        <a href="prestations.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Gérer les prestations</a>
     </p>
 
     <h2>Liste des créneaux et réservations</h2>

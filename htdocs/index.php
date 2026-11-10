@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/prestations.php';
 $pdo = getPDO();
+$prestations = prestations_actives($pdo);
 
 // Créneaux disponibles à venir (les créneaux d'aujourd'hui déjà passés sont masqués)
 $stmt = $pdo->prepare("SELECT id, date, heure FROM creneaux
@@ -110,70 +112,15 @@ function toggleCreneaux() {
 
     <h1>Prestations</h1>
 
-    <!-- PRESTATIONS (inchangées, juste remises proprement) -->
+    <!-- PRESTATIONS (gérées depuis l'admin) -->
+    <?php foreach ($prestations as $p): ?>
     <div class="service">
-        <h2>PONYTAIL SIGNATURE CLASSIC 45€ ( haut , bas , milieu )</h2>
-        <p><strong>Durée :</strong> 2h30mn</p>
-        <p><strong>Matériel :</strong> 2 paquets de tissage : Mèche naturelle, Mèche semi naturelle</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
+        <h2><?= e($p['nom']) ?><?php if ($p['prix'] !== ''): ?> – <?= e($p['prix']) ?><?php endif; ?></h2>
+        <?php if ($p['duree'] !== ''): ?><p><strong>Durée :</strong> <?= e($p['duree']) ?></p><?php endif; ?>
+        <?php if ($p['materiel'] !== ''): ?><p><strong>Matériel :</strong> <?= e($p['materiel']) ?></p><?php endif; ?>
+        <?php if (trim((string) $p['description']) !== ''): ?><p><?= nl2br(e($p['description'])) ?></p><?php endif; ?>
     </div>
-
-    <div class="service">
-        <h2>Ponytail Middle part 45€</h2>
-        <p><strong>Durée :</strong> 2h30</p>
-        <p><strong>Matériel :</strong> 2 paquets de tissages : mèches naturelles ou semi naturel</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
-    </div>
-
-    <div class="service">
-        <h2>Ponytail Frange Signature 50€</h2>
-        <p><strong>Durée :</strong> 3h00</p>
-        <p><strong>Matériel :</strong> 2 paquets de tissages : mèches naturelles ou semi naturelles</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
-    </div>
-
-    <div class="service">
-        <h2>Ponytail V Part Signature 50€ + Franges, boucles 5€</h2>
-        <p><strong>Durée :</strong> 2h30</p>
-        <p><strong>Matériel :</strong> 2 paquets de tissages</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
-    </div>
-
-    <div class="service">
-        <h2>Ponytail Demi tête ( simple ) - 50€ + V Part 5€ + V Part et frange 10€</h2>
-        <p><strong>Durée :</strong> 3h</p>
-        <p><strong>Matériel :</strong> 3 paquets de tissage : Mèche naturelle, Mèche semi naturelle</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
-    </div>
-
-    <div class="service">
-        <h2>Ponytail demi tête carré 55€( Barbie , bouclés )</h2>
-        <p><strong>Durée :</strong> 3h00</p>
-        <p><strong>Matériel :</strong> 3 paquets de mèches naturelles ou semi naturelle</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
-    </div>
-
-    <div class="service">
-        <h2>Ponytail Bun / Tresse - 40€</h2>
-        <p><strong>Durée :</strong> 2h30</p>
-        <p><strong>Matériel :</strong> 1 ou 2 paquet de mèche Xpression</p>
-        <p><strong>Instructions :</strong> LES CHEVEUX DOIVENT ÊTRE PROPRES ! Sans aucune matière grasse , ni crème, huile , pommade…</p>
-    </div>
-
-    <div class="service">
-        <h2>Tissage ouvert classique sew in 50€ + 10€ styling ( layers , boucles )</h2>
-        <p>Demande spécifique selon la coiffure.</p>
-    </div>
-
-    <div class="service">
-        <h2>Braids ( Knotless , BOHO braids ,fulani …) à partir de 40€ sur devis : écrivez moi en DM</h2>
-    </div>
-
-    <div class="service">
-        <h2>Tissage quickweave : 60€ + 10€ styling ( boucles , layers )</h2>
-        <p>Le quick weave est une technique de pose americaine où les tissages sont fixés sur une base protégée pour un rendu plat, pratique et durable. Il y a deux choix de raie : milieu ou sur le coté. Le stylisme est en supplément.</p>
-        <p>Coiffure réalisée avec 3 paquets de raw hair , virgin hair, Remy hair (non inclus). Merci de venir avec les cheveux propres, démêlés, secs (tirés), sans aucun produit appliqué. La coupe des pointes est vivement recommandée.</p>
-    </div>
+    <?php endforeach; ?>
 
     <!-- CHARTE -->
     <div class="charte">

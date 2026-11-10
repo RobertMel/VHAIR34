@@ -12,7 +12,8 @@ Site de réservation de créneaux pour V.Hair_34, coiffeuse à Montpellier (pony
   - `reserver.php` : formulaire de réservation
   - `admin/` : espace admin (connexion, gestion des créneaux)
   - `includes/helpers.php` : session, échappement HTML, protection CSRF, dates en français
-  - `includes/prestations.php` : liste des prestations du formulaire de réservation (à modifier ici)
+  - `includes/prestations.php` : accès à la table `prestations` (créée et pré-remplie automatiquement au premier chargement)
+  - `admin/prestations.php` : la coiffeuse ajoute, modifie, masque ou supprime ses prestations
 - `ancienne-maquette-html/` : premier prototype statique (localStorage), conservé pour référence
 
 ## Installation

@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/prestations.php';
 
 $pdo = getPDO();
-$prestations = require __DIR__ . '/includes/prestations.php';
+$prestations = prestations_actives($pdo);
 
 // Récupérer le créneau demandé
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
@@ -33,12 +34,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $reservable) {
 
     $nom              = trim((string) ($_POST['nom'] ?? ''));
     $telephone        = trim((string) ($_POST['telephone'] ?? ''));
-    $prestation       = trim((string) ($_POST['prestation'] ?? ''));
+    $prestation       = trim((string) ($_POST['prestation'] ?? '')); // id de la prestation choisie
     $prestation_libre = trim((string) ($_POST['prestation_libre'] ?? ''));
-    $final_prestation = $prestation_libre !== '' ? $prestation_libre : $prestation;
+    $choisie = null;
+    foreach ($prestations as $p) {
+        if ((string) $p['id'] === $prestation) {
+            $choisie = $p;
+        }
+    }
+    $final_prestation = $prestation_libre !== '' ? $prestation_libre : ($choisie ? prestation_libelle($choisie) : '');
     $telephone_net    = preg_replace('/[\s.\-()]/', '', $telephone);
 
-    if ($nom === '' || $telephone === '' || $final_prestation === '') {
+    if ($prestation !== '' && $prestation_libre === '' && !$choisie) {
+        $error = "Cette prestation n'est plus proposée, choisis-en une autre dans la liste.";
+    } elseif ($nom === '' || $telephone === '' || $final_prestation === '') {
         $error = "Merci de remplir ton nom, ton téléphone et la prestation.";
     } elseif (mb_strlen($nom) > 100) {
         $error = "Le nom est trop long.";
@@ -46,8 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $reservable) {
         $error = "Le numéro de téléphone n'est pas valide.";
     } elseif (mb_strlen($final_prestation) > 255) {
         $error = "La description de la prestation est trop longue (255 caractères maximum).";
-    } elseif ($prestation_libre === '' && !in_array($prestation, $prestations, true)) {
-        $error = "Prestation inconnue, choisis-en une dans la liste.";
     } else {
         try {
             // La condition « disponible = 1 » garantit qu'on n'écrase jamais une réservation existante,
@@ -132,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $reservable) {
             <select name="prestation" id="prestation">
                 <option value="">Sélectionne ta prestation</option>
                 <?php foreach ($prestations as $p): ?>
-                    <option value="<?= e($p) ?>" <?= $p === $prestation ? 'selected' : '' ?>><?= e($p) ?></option>
+                    <option value="<?= (int) $p['id'] ?>" <?= (string) $p['id'] === $prestation ? 'selected' : '' ?>><?= e(prestation_libelle($p)) ?></option>
                 <?php endforeach; ?>
             </select>
 
