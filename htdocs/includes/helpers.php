@@ -72,6 +72,26 @@ function date_fr(string $date): string
         . $mois[(int) date('n', $ts) - 1] . ' ' . date('Y', $ts);
 }
 
+/** Prix affiché sans retour à la ligne entre le nombre et « € » (ex. « 45 € » ne se coupe pas). */
+function prix(string $texte): string
+{
+    return e(preg_replace('/(\d)\s+€/u', "$1\u{00A0}€", $texte));
+}
+
+/** Morceaux d'une date pour l'affichage en tuile : ['jour' => 'Samedi', 'jour_court' => 'Sam.', 'num' => '14', 'mois' => 'novembre']. */
+function date_morceaux(string $date): array
+{
+    $jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    $mois  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+              'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $ts = strtotime($date);
+    if ($ts === false) {
+        return ['jour' => '', 'jour_court' => '', 'num' => '', 'mois' => ''];
+    }
+    $j = $jours[(int) date('w', $ts)];
+    return ['jour' => $j, 'jour_court' => mb_substr($j, 0, 3) . '.', 'num' => date('j', $ts), 'mois' => $mois[(int) date('n', $ts) - 1]];
+}
+
 /** Heure au format 14h30. */
 function heure_fr(string $heure): string
 {

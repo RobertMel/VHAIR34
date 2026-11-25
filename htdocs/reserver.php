@@ -2,21 +2,23 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/prestations.php';
+require_once __DIR__ . '/includes/meches.php';
+require_once __DIR__ . '/includes/images.php';
+require_once __DIR__ . '/includes/layout.php';
 
 $pdo = getPDO();
 $prestations = prestations_actives($pdo);
+$meches = meches_actives($pdo);
 
-// Récupérer le créneau demandé
+// Créneau demandé
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 if (!$id) {
     http_response_code(404);
     exit('Créneau invalide.');
 }
-
 $stmt = $pdo->prepare("SELECT id, date, heure, disponible FROM creneaux WHERE id = ?");
 $stmt->execute([$id]);
 $creneau = $stmt->fetch();
-
 if (!$creneau) {
     http_response_code(404);
     exit('Créneau introuvable.');
@@ -27,42 +29,57 @@ $reservable = (int) $creneau['disponible'] === 1 && !$estPasse;
 
 $error = null;
 $success = false;
-$nom = $telephone = $prestation = $prestation_libre = '';
+$nom = $telephone = $prestation = $prestation_libre = $meche = '';
+$mode = 'sans';
+$libellePrestation = $libelleMeche = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $reservable) {
     csrf_check();
 
     $nom              = trim((string) ($_POST['nom'] ?? ''));
     $telephone        = trim((string) ($_POST['telephone'] ?? ''));
-    $prestation       = trim((string) ($_POST['prestation'] ?? '')); // id de la prestation choisie
+    $prestation       = trim((string) ($_POST['prestation'] ?? ''));   // id de la prestation choisie
     $prestation_libre = trim((string) ($_POST['prestation_libre'] ?? ''));
+    $mode             = ($_POST['meches_mode'] ?? 'sans') === 'avec' && $meches ? 'avec' : 'sans';
+    $meche            = trim((string) ($_POST['meche'] ?? ''));        // id de la mèche choisie
+    $telephone_net    = preg_replace('/[\s.\-()]/', '', $telephone);
+
     $choisie = null;
     foreach ($prestations as $p) {
         if ((string) $p['id'] === $prestation) {
             $choisie = $p;
         }
     }
-    $final_prestation = $prestation_libre !== '' ? $prestation_libre : ($choisie ? prestation_libelle($choisie) : '');
-    $telephone_net    = preg_replace('/[\s.\-()]/', '', $telephone);
+    $mecheChoisie = null;
+    foreach ($meches as $m) {
+        if ((string) $m['id'] === $meche) {
+            $mecheChoisie = $m;
+        }
+    }
+    $libellePrestation = $prestation_libre !== '' ? $prestation_libre : ($choisie ? prestation_libelle($choisie) : '');
 
     if ($prestation !== '' && $prestation_libre === '' && !$choisie) {
         $error = "Cette prestation n'est plus proposée, choisis-en une autre dans la liste.";
-    } elseif ($nom === '' || $telephone === '' || $final_prestation === '') {
+    } elseif ($nom === '' || $telephone === '' || $libellePrestation === '') {
         $error = "Merci de remplir ton nom, ton téléphone et la prestation.";
     } elseif (mb_strlen($nom) > 100) {
         $error = "Le nom est trop long.";
     } elseif (!preg_match('/^(\+|00)?\d{9,15}$/', $telephone_net)) {
         $error = "Le numéro de téléphone n'est pas valide.";
-    } elseif (mb_strlen($final_prestation) > 255) {
+    } elseif (mb_strlen($libellePrestation) > 255) {
         $error = "La description de la prestation est trop longue (255 caractères maximum).";
+    } elseif ($mode === 'avec' && !$mecheChoisie) {
+        $error = $meche === '' ? "Tu as choisi « Avec mèches » : sélectionne ta mèche dans la liste." : "Cette mèche n'est plus proposée, choisis-en une autre.";
     } else {
+        $libelleMeche = $mode === 'avec' ? meche_libelle($mecheChoisie) : '';
         try {
+            creneaux_colonnes_meches($pdo);
             // La condition « disponible = 1 » garantit qu'on n'écrase jamais une réservation existante,
             // même si deux personnes valident le même créneau en même temps.
             $stmt = $pdo->prepare("UPDATE creneaux
-                                   SET nom_client = ?, telephone = ?, prestation = ?, disponible = 0
+                                   SET nom_client = ?, telephone = ?, prestation = ?, avec_meches = ?, meche = ?, disponible = 0
                                    WHERE id = ? AND disponible = 1");
-            $stmt->execute([$nom, $telephone_net, $final_prestation, $id]);
+            $stmt->execute([$nom, $telephone_net, $libellePrestation, $mode === 'avec' ? 1 : 0, $libelleMeche !== '' ? $libelleMeche : null, $id]);
 
             if ($stmt->rowCount() === 1) {
                 $success = true;
@@ -76,80 +93,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $reservable) {
         }
     }
 }
+
+$d = date_morceaux($creneau['date']);
+page_debut('Réserver le ' . date_fr($creneau['date']) . ' — V.Hair 34');
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Réserver le créneau - V.Hair_34</title>
-<link rel="stylesheet" href="/assets/style.css?v=<?= time() ?>">
-</head>
-<body>
-<div class="container">
-    <h1>Réserver un créneau</h1>
+<main class="resa">
+  <div class="resa-entete">
+    <a href="/#creneaux" class="icone-btn" aria-label="Retour aux créneaux">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
+    <a href="/" class="nav-logo" aria-label="V.Hair 34, accueil">V</a>
+    <span style="width: 44px"></span>
+  </div>
 
-    <?php if ($error): ?>
-        <p class="error-message"><?= e($error) ?></p>
-    <?php endif; ?>
+  <div class="resa-titre">
+    <h1>Ton rendez-vous</h1>
+    <p>Plus qu’une coiffure, une expérience</p>
+  </div>
 
-    <?php if ($success): ?>
-    <div class="success-overlay">
-        <div class="success-pop-up fade-in">
-            <div class="pop-up-icon">✅</div>
-            <h2>Réservation confirmée !</h2>
-            <p>Merci <strong><?= e($nom) ?></strong>, ton créneau est bien enregistré.</p>
-
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 20px 0;">
-
-            <p><strong>⚠️ ÉTAPE IMPORTANTE :</strong></p>
-            <p>Pour valider définitivement ton rendez-vous et discuter des détails, envoie-moi un message dès maintenant :</p>
-
-            <a href="https://www.instagram.com/v.hair_34/" target="_blank" rel="noopener" class="insta-confirm-button">
-                Envoyer un DM sur Instagram
-            </a>
-
-            <p style="font-size: 0.8em; margin-top: 15px; opacity: 0.8;">
-                (Précise ton nom et la prestation choisie)
-            </p>
-        </div>
+  <div class="creneau-choisi">
+    <div style="display: flex; align-items: center; gap: 16px">
+      <span class="gros" aria-hidden="true"><?= e($d['num']) ?></span>
+      <div>
+        <p class="date"><?= e(date_fr($creneau['date'])) ?></p>
+        <p class="heure">à <?= e(heure_fr($creneau['heure'])) ?></p>
+      </div>
     </div>
-    <?php endif; ?>
+    <a href="/#creneaux" style="font-size: 15px; padding: 10px 0">Changer</a>
+  </div>
 
-    <div class="service">
-        <h2>Créneau sélectionné</h2>
-        <p><strong>Date :</strong> <?= e(date_fr($creneau['date'])) ?></p>
-        <p><strong>Heure :</strong> <?= e(heure_fr($creneau['heure'])) ?></p>
+  <?php if ($error): ?>
+    <p class="erreur" role="alert"><?= e($error) ?></p>
+  <?php endif; ?>
+
+  <?php if ($success): ?>
+    <div class="voile" role="dialog" aria-modal="true" aria-labelledby="titre-confirmation">
+      <div class="popup">
+        <h2 id="titre-confirmation">C’est réservé !</h2>
+        <p>Merci <strong><?= e($nom) ?></strong>, ton créneau du <?= e(date_fr($creneau['date'])) ?> à <?= e(heure_fr($creneau['heure'])) ?> est enregistré.</p>
+        <p class="recap"><?= e($libellePrestation) ?><?= $libelleMeche !== '' ? '<br>Avec mèche : ' . e($libelleMeche) : '' ?></p>
+        <p class="important">Dernière étape : envoie-moi un message sur Instagram pour valider ton rendez-vous.</p>
+        <a href="<?= e(SITE_INSTAGRAM) ?>" class="btn btn-plein" rel="noopener"><?= icone_instagram() ?> Écrire à <?= e(SITE_INSTAGRAM_NOM) ?></a>
+        <a href="/" style="font-size: 15px; padding: 8px 0">Retour à l’accueil</a>
+      </div>
     </div>
-
-    <?php if (!$reservable && !$success): ?>
-        <div class="service">
-            <p>Ce créneau n'est plus disponible.</p>
-            <a href="/" class="button">Voir les autres créneaux</a>
-        </div>
-    <?php elseif (!$success): ?>
-    <div class="service">
-        <h2>Tes informations et ta prestation</h2>
-        <form method="post" class="reservation-form">
-            <?= csrf_field() ?>
-            <input type="text" name="nom" placeholder="Nom" maxlength="100" value="<?= e($nom) ?>" required>
-            <input type="tel" name="telephone" placeholder="Numéro de téléphone" maxlength="20" value="<?= e($telephone) ?>" required>
-
-            <label for="prestation">Choisis ta prestation :</label>
-            <select name="prestation" id="prestation">
-                <option value="">Sélectionne ta prestation</option>
-                <?php foreach ($prestations as $p): ?>
-                    <option value="<?= (int) $p['id'] ?>" <?= (string) $p['id'] === $prestation ? 'selected' : '' ?>><?= e(prestation_libelle($p)) ?></option>
-                <?php endforeach; ?>
-            </select>
-
-            <label for="prestation_libre">Ou autre prestation :</label>
-            <input type="text" name="prestation_libre" id="prestation_libre" maxlength="255" placeholder="Décris ta prestation" value="<?= e($prestation_libre) ?>">
-
-            <button type="submit" class="button">Réserver</button>
-        </form>
+  <?php elseif (!$reservable): ?>
+    <div class="indispo">
+      <p>Ce créneau n’est plus disponible.</p>
+      <a href="/#creneaux" class="btn btn-plein">Voir les autres créneaux</a>
     </div>
-    <?php endif; ?>
-</div>
-</body>
-</html>
+  <?php else: ?>
+    <form method="post" class="form">
+      <?= csrf_field() ?>
+
+      <div class="champ">
+        <label for="nom">Ton nom</label>
+        <input id="nom" name="nom" type="text" placeholder="Prénom et nom" autocomplete="name" maxlength="100" value="<?= e($nom) ?>" required>
+      </div>
+      <div class="champ">
+        <label for="telephone">Téléphone</label>
+        <input id="telephone" name="telephone" type="tel" placeholder="06 12 34 56 78" autocomplete="tel" maxlength="20" value="<?= e($telephone) ?>" required>
+      </div>
+
+      <fieldset>
+        <legend>Ta prestation</legend>
+        <?php foreach ($prestations as $p): ?>
+          <label class="choix">
+            <input type="radio" name="prestation" value="<?= (int) $p['id'] ?>" <?= (string) $p['id'] === $prestation ? 'checked' : '' ?>>
+            <span class="choix-nom">
+              <span class="choix-titre"><?= e($p['nom']) ?></span>
+              <?php if ($p['prix'] !== ''): ?><span class="choix-sous"><?= prix($p['prix']) ?></span><?php endif; ?>
+            </span>
+          </label>
+        <?php endforeach; ?>
+        <a href="/#carte" class="lien-discret">Voir le détail des prestations</a>
+      </fieldset>
+
+      <div class="champ">
+        <label for="prestation_libre">Autre demande (facultatif)</label>
+        <input id="prestation_libre" name="prestation_libre" type="text" placeholder="Ex. knotless mi-longues" maxlength="255" value="<?= e($prestation_libre) ?>">
+      </div>
+
+      <?php if ($meches): ?>
+        <fieldset>
+          <legend>Mèches</legend>
+          <div class="modes">
+            <label class="mode">
+              <input type="radio" name="meches_mode" value="sans" id="sans-meches" <?= $mode === 'sans' ? 'checked' : '' ?>>
+              <span class="fort">J’apporte mes mèches</span>
+              <span class="sous">Sans supplément</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="meches_mode" value="avec" id="avec-meches" <?= $mode === 'avec' ? 'checked' : '' ?>>
+              <span class="fort">Avec mèches</span>
+              <span class="sous">Fournies par V.Hair</span>
+            </label>
+          </div>
+          <div class="liste-meches" id="liste-meches">
+            <p class="sous-titre">Choisis ta mèche :</p>
+            <?php foreach ($meches as $m): $photo = $m['photos'][0]['fichier'] ?? ''; ?>
+              <label class="choix">
+                <input type="radio" name="meche" value="<?= (int) $m['id'] ?>" <?= (string) $m['id'] === $meche ? 'checked' : '' ?>>
+                <?php if ($photo !== ''): ?><img src="<?= e(image_url($photo, true)) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
+                <span class="choix-nom"><span class="choix-titre"><?= e($m['nom']) ?></span></span>
+                <span class="choix-prix"><?= $m['prix'] !== '' ? '+&nbsp;' . prix($m['prix']) : '' ?></span>
+              </label>
+            <?php endforeach; ?>
+            <a href="/meches.php" class="lien-discret">Voir les photos des mèches</a>
+          </div>
+        </fieldset>
+      <?php endif; ?>
+
+      <button type="submit" class="btn-resa">Réserver ce créneau</button>
+      <p class="note">Ensuite, envoie-moi un message sur Instagram pour valider définitivement ton rendez-vous.</p>
+    </form>
+  <?php endif; ?>
+</main>
+<?php
+page_fin();

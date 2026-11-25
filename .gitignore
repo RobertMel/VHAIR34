@@ -6,3 +6,7 @@ htdocs/config.php
 
 # macOS
 .DS_Store
+
+# Photos envoyées par la coiffeuse depuis l'admin (vivent sur l'hébergement)
+htdocs/uploads/meches/*
+!htdocs/uploads/meches/.gitkeep

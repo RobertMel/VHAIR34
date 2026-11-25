@@ -1,0 +1,5 @@
+# Dossier des photos envoyées depuis l'admin : aucun script ne doit pouvoir s'y exécuter.
+<FilesMatch "\.(php\d?|phtml|phar|pl|py|cgi|sh|html?|svg|js)$">
+    Require all denied
+</FilesMatch>
+Options -Indexes

@@ -2,178 +2,157 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/prestations.php';
-$pdo = getPDO();
-$prestations = prestations_actives($pdo);
+require_once __DIR__ . '/includes/layout.php';
 
-// Créneaux disponibles à venir (les créneaux d'aujourd'hui déjà passés sont masqués)
+$pdo = getPDO();
+
+// Prestations visibles, regroupées par catégorie dans l'ordre d'affichage
+$categories = [];
+foreach (prestations_actives($pdo) as $p) {
+    $cat = $p['categorie'] !== '' ? $p['categorie'] : 'Prestations';
+    $categories[$cat][] = $p;
+}
+
+// Créneaux libres à venir (ceux d'aujourd'hui déjà passés sont masqués)
 $stmt = $pdo->prepare("SELECT id, date, heure FROM creneaux
                        WHERE disponible = 1
                        AND (date > :today OR (date = :today2 AND heure > :now))
                        ORDER BY date ASC, heure ASC");
-$stmt->execute([
-    'today'  => date('Y-m-d'),
-    'today2' => date('Y-m-d'),
-    'now'    => date('H:i:s'),
-]);
+$stmt->execute(['today' => date('Y-m-d'), 'today2' => date('Y-m-d'), 'now' => date('H:i:s')]);
 $creneaux = $stmt->fetchAll();
+
+const CRENEAUX_VISIBLES = 8;
+$tous = isset($_GET['tous']);
+
+page_debut('V.Hair 34 — Coiffure sur rendez-vous à Montpellier', 'Ponytails, tissages et braids à Montpellier, sur rendez-vous. Choisis ton créneau en ligne.');
+site_nav('accueil');
 ?>
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>VHair34 - Accueil</title>
-<link rel="stylesheet" href="/assets/style.css?v=<?=time()?>">
-
-<style>
-/* Logo Insta fixe */
-.instagram-logo {
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 999;
-}
-
-.instagram-logo img {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-}
-
-/* Animation douce */
-.fade-in {
-    animation: fadeIn 1s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Message de bienvenue plus élégant */
-.welcome-message {
-    text-align: center;
-    margin-top: 80px;
-    padding: 20px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(4px);
-    animation: fadeIn 1.2s ease-in-out;
-    font-size: 18px;
-}
-
-/* Charte stylée */
-.charte {
-    margin-top: 40px;
-    padding: 20px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(4px);
-    line-height: 1.6;
-}
-
-.charte h2 {
-    margin-bottom: 15px;
-}
-
-/* Slots cachés */
-.hidden {
-    display: none;
-}
-</style>
-
-<script>
-// Script afficher plus / afficher moins
-function toggleCreneaux() {
-    const hiddenSlots = document.querySelectorAll('.slot.hidden');
-    const btn = document.getElementById('toggleCreneaux');
-
-    hiddenSlots.forEach(el => el.classList.toggle('hidden'));
-
-    btn.textContent = (btn.textContent === 'Afficher plus') ? 'Afficher moins' : 'Afficher plus';
-}
-</script>
-
-</head>
-<body>
-
-<a href="https://www.instagram.com/v.hair_34/" target="_blank" class="instagram-logo">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram">
-</a>
-
-<div class="container fade-in">
-
-    <div class="welcome-message">
-        <h1>V.Hair_34</h1>
-        <p>🌷 Bienvenue chez V.Hair34 ✨, spécialiste en Ponytail, tissages et braids à Montpellier.</p>
-        <p>Choisis ton créneau, détends-toi, et laisse-moi sublimer ta beauté 💇🏾‍♀️.</p>
-        <p>Je t’attends avec le sourire pour un moment 100 % beauté.</p>
+<main>
+  <!-- Haut de page -->
+  <section id="top" class="hero">
+    <div class="logo-bloc">
+      <span class="logo-v anim-v" aria-hidden="true">V</span>
+      <h1 class="logo-mot anim-mot">V.HAIR<span class="sr-only"> 34</span></h1>
+      <span class="logo-34 anim-mot" aria-hidden="true">34</span>
     </div>
-
-    <h1>Prestations</h1>
-
-    <!-- PRESTATIONS (gérées depuis l'admin) -->
-    <?php foreach ($prestations as $p): ?>
-    <div class="service">
-        <h2><?= e($p['nom']) ?><?php if ($p['prix'] !== ''): ?> – <?= e($p['prix']) ?><?php endif; ?></h2>
-        <?php if ($p['duree'] !== ''): ?><p><strong>Durée :</strong> <?= e($p['duree']) ?></p><?php endif; ?>
-        <?php if ($p['materiel'] !== ''): ?><p><strong>Matériel :</strong> <?= e($p['materiel']) ?></p><?php endif; ?>
-        <?php if (trim((string) $p['description']) !== ''): ?><p><?= nl2br(e($p['description'])) ?></p><?php endif; ?>
+    <p class="slogan anim-suite">BEAUTY • HAIR • CONFIDENCE</p>
+    <p class="accroche anim-suite">Plus qu’une coiffure, une expérience</p>
+    <p class="hero-ligne anim-suite">Ponytails | Tissages | Braids, Montpellier sur rdv</p>
+    <p class="hero-ligne anim-suite">Choisis ton créneau, je m’occupe du reste</p>
+    <div class="hero-actions anim-suite">
+      <a href="#creneaux" class="btn btn-plein">Voir les créneaux</a>
+      <a href="#carte" class="btn btn-contour">Prestations et tarifs</a>
     </div>
-    <?php endforeach; ?>
+  </section>
 
-    <!-- CHARTE -->
-    <div class="charte">
-        <h2>Charte de fonctionnement – V.HAIR</h2>
+  <!-- Galerie -->
+  <div class="galerie">
+    <img src="/assets/img/carte.jpg" alt="Carte de visite V.Hair 34 gaufrée" width="399" height="330" loading="lazy">
+    <img src="/assets/img/cheveux.jpg" alt="Cheveux ondulés brun chocolat, signature V.Hair 34" width="425" height="259" loading="lazy">
+    <img src="/assets/img/sac.jpg" alt="Sac V.Hair 34, vase et bougie" width="424" height="259" loading="lazy">
+  </div>
 
-        <h3>1. Hygiène & préparation</h3>
-        <p>Pour assurer une prestation de qualité, merci de venir avec les cheveux propres, entièrement secs ( sans aucun résidus, gel, pommade, crème , huile …)</p>
+  <!-- La carte -->
+  <section id="carte" class="section section-lin">
+    <div class="conteneur-etroit">
+      <h2 class="titre-section">La carte</h2>
+      <p class="intro-section">Mèches non incluses, sauf si tu choisis « Avec mèches » à la réservation. Viens avec les cheveux propres et secs, sans gel, crème, huile ni pommade.</p>
 
-        <h3>2. Réservation</h3>
-        <p>En réservant, vous vous engagez à honorer votre créneau et à respecter les conditions de la présente charte.
-        Toute réservation vaut engagement : merci de respecter votre créneau ou de prévenir en cas d’empêchement.</p>
+      <?php if (!$categories): ?>
+        <p class="intro-section">La carte est en cours de mise à jour. Écris-moi sur Instagram pour connaître les tarifs.</p>
+      <?php endif; ?>
 
-        <h3>3. Retards</h3>
-        <p>Par respect pour le planning, tout retard de plus de 20 minutes entraîne l’annulation du rendez-vous.
-        Cela permet de maintenir un service fluide et de garantir le même niveau de qualité pour toutes.
-        Je vous invite donc à prévoir un léger temps d’avance.🥰</p>
+      <?php foreach ($categories as $cat => $liste): ?>
+        <div class="categorie">
+          <h3 class="categorie-titre"><?= e($cat) ?></h3>
+          <?php foreach ($liste as $p): ?>
+            <div class="presta">
+              <?php $prixLong = mb_strlen($p['prix']) > 10; // ex. « 50 € (+5 € franges) » : affiché sous le nom ?>
+              <div class="presta-ligne">
+                <span class="presta-nom"><?= e($p['nom']) ?></span>
+                <?php if (!$prixLong): ?>
+                  <span class="pointilles" aria-hidden="true"></span>
+                  <span class="presta-prix"><?= prix($p['prix']) ?></span>
+                <?php endif; ?>
+              </div>
+              <?php if ($prixLong): ?><p class="presta-prix-long"><?= prix($p['prix']) ?></p><?php endif; ?>
+              <?php if ($p['materiel'] !== '' || $p['duree'] !== ''): ?>
+                <div class="presta-detail">
+                  <span><?= e($p['materiel']) ?></span>
+                  <span><?= e($p['duree']) ?></span>
+                </div>
+              <?php endif; ?>
+              <?php if (trim((string) $p['description']) !== ''): ?>
+                <p class="presta-desc"><?= nl2br(e($p['description'])) ?></p>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endforeach; ?>
 
-        <h3>4. Accompagnateurs</h3>
-        <p>Pour garantir un environnement calme, confortable et sécurisé aucun accompagnateur n’est autorisé.</p>
-
-        <h3>5. Paiement</h3>
-        <ul>
-            <li>Espèces (merci de prévoir l’appoint)</li>
-            <li>PayPal</li>
-        </ul>
-
-        <h3>6. Engagement qualité</h3>
-        <p>V.HAIR s’engage à fournir un service professionnel, soigné et personnalisé.
-        En retour, nous vous remercions de respecter le cadre de travail et les règles établies afin de garantir la meilleure expérience possible pour toutes.</p>
+      <p class="centre" style="margin-top: 8px"><a href="/meches.php" class="btn btn-contour">Voir nos mèches</a></p>
     </div>
+  </section>
 
-    <!-- CRENEAUX -->
-    <h1>Créneaux Disponibles</h1>
+  <!-- Avant de venir -->
+  <section id="infos" class="section">
+    <h2 class="titre-section">Avant de venir</h2>
+    <p class="intro-section">Réserver, c’est s’engager à honorer son créneau. Ces règles garantissent à chacune le même moment de qualité.</p>
+    <div class="regles">
+      <div class="regle">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9C7E70" stroke-width="1.3" aria-hidden="true"><path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"></path></svg>
+        <div><p class="regle-titre">Cheveux propres et secs</p><p class="regle-texte">Sans aucun résidu de gel, crème, huile ou pommade : c’est la base d’une pose nette.</p></div>
+      </div>
+      <div class="regle">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9C7E70" stroke-width="1.3" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+        <div><p class="regle-titre">20 minutes de retard au maximum</p><p class="regle-texte">Au-delà, le rendez-vous est annulé pour respecter le planning. Prévois un peu d’avance.</p></div>
+      </div>
+      <div class="regle">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9C7E70" stroke-width="1.3" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>
+        <div><p class="regle-titre">Sans accompagnateur</p><p class="regle-texte">Pour garder un cadre calme, confortable et sécurisé.</p></div>
+      </div>
+      <div class="regle">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9C7E70" stroke-width="1.3" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><circle cx="12" cy="12" r="2.5"></circle></svg>
+        <div><p class="regle-titre">Espèces ou PayPal</p><p class="regle-texte">Merci de prévoir l’appoint si tu règles en espèces.</p></div>
+      </div>
+    </div>
+  </section>
 
-    <?php if (!$creneaux): ?>
-        <p>Aucun créneau disponible pour le moment. Écris-moi sur Instagram pour en savoir plus 💌</p>
-    <?php endif; ?>
+  <!-- Prochains créneaux -->
+  <section id="creneaux" class="section section-bordeaux sur-fonce">
+    <div class="conteneur">
+      <h2 class="titre-section">Prochains créneaux</h2>
+      <p class="intro-section">Touche un créneau pour le réserver.</p>
 
-    <ul>
-        <?php foreach($creneaux as $index => $c): ?>
-            <li class="slot <?= $index >= 5 ? 'hidden' : '' ?>">
-                <span class="slot-info">
-                    <?= e(date_fr($c['date'])) ?> à <?= e(heure_fr($c['heure'])) ?>
-                </span>
-                <a href="reserver.php?id=<?= (int) $c['id'] ?>" class="button">Réserver</a>
-            </li>
-        <?php endforeach; ?>
-    </ul>
-
-    <?php if(count($creneaux) > 5): ?>
-        <button id="toggleCreneaux" onclick="toggleCreneaux()" class="button">Afficher plus</button>
-    <?php endif; ?>
-
-</div>
-</body>
-</html>
+      <?php if (!$creneaux): ?>
+        <p class="vide">Aucun créneau disponible pour le moment.<br>Écris-moi sur Instagram pour en savoir plus.</p>
+        <p class="centre"><a href="<?= e(SITE_INSTAGRAM) ?>" class="btn btn-clair" rel="noopener"><?= icone_instagram() ?> <?= e(SITE_INSTAGRAM_NOM) ?></a></p>
+      <?php else: ?>
+        <div class="creneaux" id="liste-creneaux">
+          <?php foreach ($creneaux as $i => $c): $d = date_morceaux($c['date']); ?>
+            <a href="/reserver.php?id=<?= (int) $c['id'] ?>" class="creneau<?= (!$tous && $i >= CRENEAUX_VISIBLES) ? ' cache' : '' ?>"
+               aria-label="Réserver le <?= e(date_fr($c['date'])) ?> à <?= e(heure_fr($c['heure'])) ?>">
+              <span class="creneau-jour"><?= e($d['jour']) ?></span>
+              <span class="creneau-num"><?= e($d['num']) ?></span>
+              <span class="creneau-mois"><?= e($d['mois']) ?></span>
+              <span class="creneau-heure"><?= e(heure_fr($c['heure'])) ?></span>
+            </a>
+          <?php endforeach; ?>
+        </div>
+        <?php if (!$tous && count($creneaux) > CRENEAUX_VISIBLES): ?>
+          <p class="centre"><a href="/?tous=1#creneaux" class="btn btn-clair" id="plus-creneaux">Afficher plus de créneaux</a></p>
+        <?php endif; ?>
+      <?php endif; ?>
+    </div>
+  </section>
+</main>
+<?php
+site_pied();
+// Confort : afficher les créneaux suivants sans recharger la page (le lien fonctionne aussi sans JavaScript)
+page_fin(<<<'JS'
+document.getElementById('plus-creneaux')?.addEventListener('click', function (e) {
+  e.preventDefault();
+  document.querySelectorAll('#liste-creneaux .cache').forEach(function (el) { el.classList.remove('cache'); });
+  this.parentElement.remove();
+});
+JS);
