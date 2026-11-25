@@ -1,69 +1,78 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../includes/admin_layout.php';
 require_admin();
 
 $pdo = getPDO();
+$avecPasses = isset($_GET['passes']);
 $creneaux = $pdo->query("SELECT * FROM creneaux ORDER BY date ASC, heure ASC")->fetchAll();
+$maintenant = time();
+
+$liste = [];
+$nbPasses = 0;
+foreach ($creneaux as $c) {
+    $c['passe'] = strtotime($c['date'] . ' ' . $c['heure']) < $maintenant;
+    if ($c['passe']) {
+        $nbPasses++;
+        if (!$avecPasses) {
+            continue;
+        }
+    }
+    $liste[] = $c;
+}
+
+admin_debut('Créneaux', 'creneaux');
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="robots" content="noindex">
-<title>Gestion des créneaux</title>
-<style>
-body { font-family: Arial; padding:20px; background:#f9f9f9; }
-h1 { margin-bottom:20px; }
-table { border-collapse: collapse; width: 100%; background:white; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align:center; }
-th { background: #eee; }
-a.button, button.button { display:inline-block; padding:5px 10px; background:#007BFF; color:white; text-decoration:none; border:none; border-radius:4px; font:inherit; cursor:pointer; }
-a.button:hover, button.button:hover { background:#0056b3; }
-button.danger { background:#c0392b; }
-button.danger:hover { background:#922b21; }
-form.inline { display:inline; }
-.status-yes { color: green; font-weight:bold; }
-.status-no { color: red; font-weight:bold; }
-</style>
-</head>
-<body>
-<h1>Liste des créneaux</h1>
-<p><a href="creneaux_add.php" class="button">Ajouter un créneau</a></p>
+<div class="a-titre">
+  <div>
+    <h1>Créneaux</h1>
+    <p class="a-intro">Les créneaux libres et à venir s’affichent sur le site. Un créneau réservé n’est plus proposé aux autres clientes.</p>
+  </div>
+  <a href="creneaux_add.php" class="b b-plein b-grand">Ajouter un créneau</a>
+</div>
+<?php admin_flash(); ?>
 
-<table>
-<tr>
-    <th>ID</th>
-    <th>Date</th>
-    <th>Heure</th>
-    <th>Disponible</th>
-    <th>Client</th>
-    <th>Téléphone</th>
-    <th>Actions</th>
-</tr>
+<p style="margin: 0 0 14px; font-size: 15px">
+  <?php if ($avecPasses): ?>
+    <a href="creneaux.php">Masquer les créneaux passés</a>
+  <?php elseif ($nbPasses): ?>
+    <a href="creneaux.php?passes=1">Voir aussi les <?= $nbPasses ?> créneau<?= $nbPasses > 1 ? 'x' : '' ?> passé<?= $nbPasses > 1 ? 's' : '' ?></a>
+  <?php endif; ?>
+</p>
 
-<?php foreach ($creneaux as $c): ?>
-<tr>
-    <td><?= (int) $c['id'] ?></td>
-    <td><?= e($c['date']) ?></td>
-    <td><?= e($c['heure']) ?></td>
-    <td class="<?= $c['disponible'] ? 'status-yes' : 'status-no' ?>">
-        <?= $c['disponible'] ? 'Oui' : 'Non' ?>
-    </td>
-    <td><?= e($c['nom_client'] ?? '-') ?></td>
-    <td><?= e($c['telephone'] ?? '-') ?></td>
-    <td>
-        <a href="creneaux_edit.php?id=<?= (int) $c['id'] ?>" class="button">Éditer</a>
-        <form method="post" action="creneaux_delete.php" class="inline" onsubmit="return confirm('Supprimer ce créneau ?')">
-            <?= csrf_field() ?>
-            <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
-            <button class="button danger">Supprimer</button>
-        </form>
-    </td>
-</tr>
-<?php endforeach; ?>
-</table>
-
-<p><a href="dashboard.php">Retour au dashboard</a></p>
-</body>
-</html>
+<?php if (!$liste): ?>
+  <div class="carte vide">Aucun créneau à venir. Clique sur « Ajouter un créneau » pour en proposer.</div>
+<?php else: ?>
+  <table class="tableau">
+    <thead><tr><th>Date</th><th>Heure</th><th>État</th><th>Cliente</th><th>Téléphone</th><th>Actions</th></tr></thead>
+    <tbody>
+    <?php foreach ($liste as $c): ?>
+      <tr class="<?= $c['passe'] ? 'attenue' : '' ?>">
+        <td data-label="Date" class="titre-ligne"><?= e(date_fr($c['date'])) ?></td>
+        <td data-label="Heure"><?= e(heure_fr($c['heure'])) ?></td>
+        <td data-label="État">
+          <?php if ($c['passe']): ?><span class="etat etat-passe">Passé</span>
+          <?php elseif ($c['disponible']): ?><span class="etat etat-libre">Libre</span>
+          <?php else: ?><span class="etat etat-pris">Réservé</span><?php endif; ?>
+        </td>
+        <td data-label="Cliente"><?= e($c['nom_client'] ?? '–') ?></td>
+        <td data-label="Téléphone"><?php if (!empty($c['telephone'])): ?><a href="tel:<?= e($c['telephone']) ?>"><?= e($c['telephone']) ?></a><?php else: ?>–<?php endif; ?></td>
+        <td class="actions-ligne sans-label">
+          <div class="actions">
+            <a href="creneaux_edit.php?id=<?= (int) $c['id'] ?>" class="b">Modifier</a>
+            <form method="post" action="creneaux_delete.php" class="en-ligne"
+                  onsubmit="return confirm('<?= $c['disponible'] ? 'Supprimer ce créneau ?' : 'Ce créneau est réservé par ' . e(addslashes($c['nom_client'] ?? '')) . '. Le supprimer quand même ?' ?>')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= (int) $c['id'] ?>">
+              <button class="b b-danger">Supprimer</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+<?php endif; ?>
+<?php
+admin_fin();

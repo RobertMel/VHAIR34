@@ -2,76 +2,90 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/meches.php';
+require_once __DIR__ . '/../includes/admin_layout.php';
 require_admin();
 
 $pdo = getPDO();
 creneaux_colonnes_meches($pdo); // ajoute les colonnes du choix des mèches si besoin
 
-// Récupérer tous les créneaux
-$stmt = $pdo->query("SELECT * FROM creneaux ORDER BY date ASC, heure ASC");
-$creneaux = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$creneaux = $pdo->query("SELECT * FROM creneaux ORDER BY date ASC, heure ASC")->fetchAll();
+$maintenant = time();
+$aVenir = $libres = $passees = [];
+foreach ($creneaux as $c) {
+    $futur = strtotime($c['date'] . ' ' . $c['heure']) >= $maintenant;
+    if (!$c['disponible'] && $futur) {
+        $aVenir[] = $c;
+    } elseif ($c['disponible'] && $futur) {
+        $libres[] = $c;
+    } elseif (!$c['disponible']) {
+        $passees[] = $c;
+    }
+}
+$passees = array_slice(array_reverse($passees), 0, 50); // les plus récentes d'abord
+
+function meches_texte(array $c): string
+{
+    return !empty($c['avec_meches']) ? 'Avec mèche : ' . ($c['meche'] ?? '') : 'Ses propres mèches';
+}
+
+admin_debut('Réservations', 'dashboard');
 ?>
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Dashboard Admin</title>
-<link rel="stylesheet" href="/assets/style.css?v=<?=time()?>">
-<style>
-.table-wrap { overflow-x: auto; }
-table { min-width: 760px; width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-th { background: #ffd700; color: black; }
-tr:nth-child(even) { background: #fff8dc; }
-</style>
-</head>
-<body>
-<div class="container">
-    <h1>Dashboard Admin</h1>
-    <p>Bienvenue, <?= e($_SESSION['admin_user'] ?? '') ?> | <a href="logout.php">Déconnexion</a></p>
-
-    <!-- Accès à la gestion des créneaux, des prestations et des mèches -->
-    <p style="display:flex; flex-wrap:wrap; gap:10px;">
-        <a href="creneaux.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Gérer les créneaux</a>
-        <a href="prestations.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Gérer les prestations</a>
-        <a href="meches.php" class="button" style="background:black; color:gold; padding:10px 15px; border-radius:8px; text-decoration:none;">Gérer les mèches</a>
-    </p>
-
-    <h2>Liste des créneaux et réservations</h2>
-    <div class="table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Date</th>
-                <th>Heure</th>
-                <th>Disponible</th>
-                <th>Client</th>
-                <th>Téléphone</th>
-                <th>Prestation</th>
-                <th>Mèches</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach($creneaux as $c): ?>
-            <tr>
-                <td><?= e($c['id']) ?></td>
-                <td><?= e($c['date']) ?></td>
-                <td><?= e($c['heure']) ?></td>
-                <td><?= $c['disponible'] ? 'Oui' : 'Réservé' ?></td>
-                <td><?= e($c['nom_client'] ?? '-') ?></td>
-                <td><?= e($c['telephone'] ?? '-') ?></td>
-                <td><?= e($c['prestation'] ?? '-') ?></td>
-                <td><?= !empty($c['avec_meches']) ? e($c['meche'] ?? 'Avec mèches') : ($c['disponible'] ? '-' : 'Les siennes') ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-    </div>
+<div class="a-titre">
+  <div>
+    <h1>Bonjour <?= e($_SESSION['admin_user'] ?? '') ?></h1>
+    <p class="a-intro">Tes prochains rendez-vous, du plus proche au plus lointain.</p>
+  </div>
+  <a href="creneaux_add.php" class="b b-plein b-grand">Ajouter un créneau</a>
 </div>
 
-</body>
-</html>
+<div class="stats">
+  <div class="carte stat"><div class="n"><?= count($aVenir) ?></div><div class="l">réservation<?= count($aVenir) > 1 ? 's' : '' ?> à venir</div></div>
+  <div class="carte stat"><div class="n"><?= count($libres) ?></div><div class="l">créneau<?= count($libres) > 1 ? 'x' : '' ?> libre<?= count($libres) > 1 ? 's' : '' ?> en ligne</div></div>
+  <div class="carte stat"><div class="n"><?= count($passees) ?></div><div class="l">rendez-vous passé<?= count($passees) > 1 ? 's' : '' ?></div></div>
+</div>
+
+<h2 class="a-sous">Prochaines réservations</h2>
+<?php if (!$aVenir): ?>
+  <div class="carte vide">Aucune réservation à venir pour l’instant.</div>
+<?php else: ?>
+  <div class="resas">
+    <?php foreach ($aVenir as $c): $d = date_morceaux($c['date']); ?>
+      <article class="carte resa">
+        <div class="resa-date">
+          <div class="j"><?= e($d['jour_court']) ?></div>
+          <div class="n"><?= e($d['num']) ?></div>
+          <div class="j"><?= e($d['mois']) ?></div>
+          <div class="h"><?= e(heure_fr($c['heure'])) ?></div>
+        </div>
+        <div class="resa-infos">
+          <span class="nom"><?= e($c['nom_client'] ?? 'Sans nom') ?></span>
+          <?php if (!empty($c['telephone'])): ?><a href="tel:<?= e($c['telephone']) ?>"><?= e($c['telephone']) ?></a><?php endif; ?>
+          <span><?= prix($c['prestation'] ?? '') ?></span>
+          <span class="doux"><?= prix(meches_texte($c)) ?></span>
+        </div>
+      </article>
+    <?php endforeach; ?>
+  </div>
+<?php endif; ?>
+
+<h2 class="a-sous">Rendez-vous passés</h2>
+<?php if (!$passees): ?>
+  <div class="carte vide">Aucun rendez-vous passé.</div>
+<?php else: ?>
+  <table class="tableau">
+    <thead><tr><th>Date</th><th>Cliente</th><th>Téléphone</th><th>Prestation</th><th>Mèches</th></tr></thead>
+    <tbody>
+    <?php foreach ($passees as $c): ?>
+      <tr>
+        <td data-label="Date"><?= e(date('d/m/Y', strtotime($c['date']))) ?> à <?= e(heure_fr($c['heure'])) ?></td>
+        <td data-label="Cliente" class="titre-ligne"><?= e($c['nom_client'] ?? '-') ?></td>
+        <td data-label="Téléphone"><?= e($c['telephone'] ?? '-') ?></td>
+        <td data-label="Prestation"><?= e($c['prestation'] ?? '-') ?></td>
+        <td data-label="Mèches"><?= e(meches_texte($c)) ?></td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+<?php endif; ?>
+<?php
+admin_fin();

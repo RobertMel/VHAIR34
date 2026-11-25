@@ -19,7 +19,7 @@ Site de réservation de créneaux pour V.Hair_34, coiffeuse à Montpellier (pony
   - `admin/meches.php` : la coiffeuse gère ses mèches et leurs photos (plusieurs par mèche)
   - `includes/meches.php` : tables `meches` et `meche_photos` (créées automatiquement), colonnes `avec_meches` et `meche` ajoutées à `creneaux` si besoin
   - `includes/images.php` : contrôle des photos envoyées, redimensionnement (1600 px + vignette 480 px), données GPS retirées
-  - `includes/layout.php` : menu et pied de page communs
+  - `includes/layout.php` : menu et pied de page communs du site ; `includes/admin_layout.php` + `assets/admin.css` : en-tête, menu et style de l'admin
   - `uploads/meches/` : photos envoyées depuis l'admin (non versionnées, `.htaccess` interdit l'exécution de scripts)
 - `ancienne-maquette-html/` : premier prototype statique (localStorage), conservé pour référence
 

@@ -14,6 +14,9 @@ $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 if ($id) {
     $stmt = getPDO()->prepare("DELETE FROM creneaux WHERE id = ?");
     $stmt->execute([$id]);
+    if ($stmt->rowCount()) {
+        $_SESSION['flash'] = 'Créneau supprimé.';
+    }
 }
 
 header('Location: creneaux.php');

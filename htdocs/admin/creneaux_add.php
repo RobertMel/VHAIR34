@@ -1,9 +1,12 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../includes/admin_layout.php';
 require_admin();
 
 $error = '';
+$date = $heure = '';
+$disponible = 1;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -17,42 +20,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $stmt = getPDO()->prepare("INSERT INTO creneaux (date, heure, disponible) VALUES (?, ?, ?)");
         $stmt->execute([$date, $heure, $disponible]);
+        $_SESSION['flash'] = 'Créneau du ' . mb_strtolower(date_fr($date)) . ' à ' . heure_fr($heure) . ' ajouté.';
         header('Location: creneaux.php');
         exit;
     }
 }
-?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="robots" content="noindex">
-<title>Ajouter un créneau</title>
-<style>
-body { font-family: Arial; padding:20px; background:#f9f9f9; }
-h1 { margin-bottom:20px; }
-input[type=text], input[type=date], input[type=time] { padding:5px; width:200px; margin-bottom:10px; }
-button { padding:5px 10px; background:#007BFF; color:white; border:none; border-radius:4px; cursor:pointer; }
-button:hover { background:#0056b3; }
-.error { color:red; margin-bottom:10px; }
-</style>
-</head>
-<body>
-<h1>Ajouter un créneau</h1>
-<?php if ($error): ?><p class="error"><?= e($error) ?></p><?php endif; ?>
 
-<form method="post">
-    <?= csrf_field() ?>
-    <label>Date :</label><br>
-    <input type="date" name="date" required><br>
-    <label>Heure :</label><br>
-    <input type="time" name="heure" required><br>
-    <label>
-        <input type="checkbox" name="disponible" checked> Disponible
-    </label><br><br>
-    <button>Ajouter</button>
+admin_debut('Ajouter un créneau', 'creneaux');
+?>
+<div class="a-titre"><h1>Ajouter un créneau</h1></div>
+<?php admin_erreur($error); ?>
+
+<form method="post" class="carte form">
+  <?= csrf_field() ?>
+  <div class="deux">
+    <div class="champ">
+      <label for="date">Date</label>
+      <input type="date" id="date" name="date" value="<?= e($date) ?>" min="<?= date('Y-m-d') ?>" required>
+    </div>
+    <div class="champ">
+      <label for="heure">Heure</label>
+      <input type="time" id="heure" name="heure" value="<?= e($heure) ?>" step="300" required>
+    </div>
+  </div>
+  <label class="case"><input type="checkbox" name="disponible" <?= $disponible ? 'checked' : '' ?>> Proposer ce créneau sur le site</label>
+  <button class="b b-plein b-grand">Ajouter le créneau</button>
 </form>
 
-<p><a href="creneaux.php">Retour à la liste</a></p>
-</body>
-</html>
+<a href="creneaux.php" class="a-retour">← Retour aux créneaux</a>
+<?php
+admin_fin();

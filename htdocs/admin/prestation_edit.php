@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/prestations.php';
+require_once __DIR__ . '/../includes/admin_layout.php';
 require_admin();
 
 $pdo = getPDO();
@@ -56,67 +57,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+
+admin_debut($edition ? 'Modifier une prestation' : 'Ajouter une prestation', 'prestations');
 ?>
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title><?= $edition ? 'Modifier une prestation' : 'Ajouter une prestation' ?></title>
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; color: #222; }
-h1 { margin-bottom: 20px; }
-form { max-width: 560px; display: flex; flex-direction: column; gap: 6px; }
-label { font-weight: bold; margin-top: 10px; }
-.aide { font-size: 13px; color: #666; margin: 0; }
-input[type=text], input[type=number], select, textarea { padding: 8px; font: inherit; border: 1px solid #bbb; border-radius: 4px; }
-textarea { min-height: 110px; resize: vertical; }
-.check { font-weight: normal; display: flex; gap: 8px; align-items: center; margin-top: 14px; }
-button { margin-top: 18px; align-self: flex-start; padding: 10px 18px; background: #007BFF; color: white; border: none; border-radius: 4px; font: inherit; cursor: pointer; }
-button:hover { background: #0056b3; }
-.error { color: #b00020; background: #fdecea; border: 1px solid #f5c2c0; padding: 10px 14px; border-radius: 6px; max-width: 560px; }
-</style>
-</head>
-<body>
-<h1><?= $edition ? 'Modifier la prestation' : 'Ajouter une prestation' ?></h1>
-<?php if ($error): ?><p class="error"><?= e($error) ?></p><?php endif; ?>
+<div class="a-titre"><h1><?= $edition ? 'Modifier la prestation' : 'Ajouter une prestation' ?></h1></div>
+<?php admin_erreur($error); ?>
 
-<form method="post">
-    <?= csrf_field() ?>
+<form method="post" class="carte form">
+  <?= csrf_field() ?>
 
+  <div class="champ">
     <label for="nom">Nom de la prestation *</label>
     <input type="text" id="nom" name="nom" maxlength="150" required value="<?= e($p['nom']) ?>" placeholder="Ex. Ponytail Middle Part">
+  </div>
 
-    <label for="categorie">Catégorie</label>
-    <select id="categorie" name="categorie">
+  <div class="deux">
+    <div class="champ">
+      <label for="categorie">Catégorie</label>
+      <select id="categorie" name="categorie">
         <?php foreach (PRESTATIONS_CATEGORIES as $c): ?>
-            <option value="<?= e($c) ?>" <?= $c === $p['categorie'] ? 'selected' : '' ?>><?= e($c) ?></option>
+          <option value="<?= e($c) ?>" <?= $c === $p['categorie'] ? 'selected' : '' ?>><?= e($c) ?></option>
         <?php endforeach; ?>
-    </select>
+      </select>
+    </div>
+    <div class="champ">
+      <label for="duree">Durée</label>
+      <input type="text" id="duree" name="duree" maxlength="50" value="<?= e($p['duree']) ?>" placeholder="Ex. 2h30">
+    </div>
+  </div>
 
+  <div class="champ">
     <label for="prix">Prix</label>
     <input type="text" id="prix" name="prix" maxlength="80" value="<?= e($p['prix']) ?>" placeholder="Ex. 45 €  ou  50 € (+5 € franges)">
     <p class="aide">Texte libre : tu peux écrire « À partir de 40 € » ou « Sur devis ».</p>
+  </div>
 
-    <label for="duree">Durée</label>
-    <input type="text" id="duree" name="duree" maxlength="50" value="<?= e($p['duree']) ?>" placeholder="Ex. 2h30">
-
+  <div class="champ">
     <label for="materiel">Matériel à prévoir</label>
     <input type="text" id="materiel" name="materiel" maxlength="255" value="<?= e($p['materiel']) ?>" placeholder="Ex. 2 paquets de mèches naturelles">
+  </div>
 
+  <div class="champ">
     <label for="description">Description ou instructions</label>
     <textarea id="description" name="description" maxlength="2000" placeholder="Ex. Les cheveux doivent être propres, sans produit."><?= e($p['description']) ?></textarea>
+  </div>
 
-    <label for="ordre">Ordre d'affichage</label>
+  <div class="champ">
+    <label for="ordre">Ordre d’affichage</label>
     <input type="number" id="ordre" name="ordre" step="1" value="<?= (int) $p['ordre'] ?>">
     <p class="aide">Les prestations sont triées du plus petit au plus grand nombre (10, 20, 30…).</p>
+  </div>
 
-    <label class="check"><input type="checkbox" name="actif" <?= $p['actif'] ? 'checked' : '' ?>> Visible sur le site</label>
+  <label class="case"><input type="checkbox" name="actif" <?= $p['actif'] ? 'checked' : '' ?>> Visible sur le site</label>
 
-    <button><?= $edition ? 'Enregistrer les modifications' : 'Ajouter la prestation' ?></button>
+  <button class="b b-plein b-grand"><?= $edition ? 'Enregistrer' : 'Ajouter la prestation' ?></button>
 </form>
 
-<p><a href="prestations.php">Retour à la liste des prestations</a></p>
-</body>
-</html>
+<a href="prestations.php" class="a-retour">← Retour aux prestations</a>
+<?php
+admin_fin();
