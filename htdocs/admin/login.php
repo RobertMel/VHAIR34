@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../includes/securite.php';
 
 if (($_SESSION['admin_logged'] ?? false) === true) {
     header('Location: /admin/dashboard.php');
@@ -8,6 +9,7 @@ if (($_SESSION['admin_logged'] ?? false) === true) {
 }
 
 $error = null;
+$info = isset($_GET['expire']) ? 'Ta session a expiré après une longue inactivité. Reconnecte-toi.' : null;
 $u = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,24 +17,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $u = trim((string) ($_POST['username'] ?? ''));
     $p = (string) ($_POST['password'] ?? '');
-
     $pdo = getPDO();
-    $stmt = $pdo->prepare('SELECT id, password_hash FROM admins WHERE username = ?');
-    $stmt->execute([$u]);
-    $row = $stmt->fetch();
 
-    if ($row && password_verify($p, $row['password_hash'])) {
-        // Nouvel identifiant de session à la connexion (empêche la fixation de session)
-        session_regenerate_id(true);
-        $_SESSION['admin_logged'] = true;
-        $_SESSION['admin_user'] = $u;
-        header('Location: /admin/dashboard.php');
-        exit;
+    if (connexion_bloquee($pdo, $u)) {
+        // Trop d'essais ratés : on ne vérifie même pas le mot de passe
+        $error = 'Trop de tentatives de connexion. Réessaie dans ' . ECHECS_FENETRE_MINUTES . ' minutes.';
+    } else {
+        $stmt = $pdo->prepare('SELECT id, password_hash FROM admins WHERE username = ?');
+        $stmt->execute([$u]);
+        $row = $stmt->fetch();
+
+        if ($row && password_verify($p, $row['password_hash'])) {
+            connexion_reussie($pdo);
+            if (password_needs_rehash($row['password_hash'], PASSWORD_DEFAULT)) {
+                $pdo->prepare('UPDATE admins SET password_hash = ? WHERE id = ?')->execute([password_hash($p, PASSWORD_DEFAULT), $row['id']]);
+            }
+            // Nouvel identifiant de session à la connexion (empêche la fixation de session)
+            session_regenerate_id(true);
+            $_SESSION['admin_logged'] = true;
+            $_SESSION['admin_id'] = (int) $row['id'];
+            $_SESSION['admin_user'] = $u;
+            $_SESSION['admin_vu'] = time();
+            header('Location: /admin/dashboard.php');
+            exit;
+        }
+
+        connexion_echec($pdo, $u);
+        sleep(1); // ralentit les essais en série
+        $error = 'Identifiant ou mot de passe incorrect.';
     }
-
-    // Ralentit les tentatives de mot de passe en série
-    sleep(1);
-    $error = 'Identifiant ou mot de passe incorrect.';
 }
 $v = @filemtime(__DIR__ . '/../assets/admin.css') ?: 1;
 ?>
@@ -58,6 +71,7 @@ $v = @filemtime(__DIR__ . '/../assets/admin.css') ?: 1;
       <p>Espace admin</p>
     </div>
     <?php if ($error): ?><p class="a-msg a-msg-err" role="alert" style="margin: 0"><?= e($error) ?></p><?php endif; ?>
+    <?php if ($info && !$error): ?><p class="a-msg a-msg-ok" role="status" style="margin: 0"><?= e($info) ?></p><?php endif; ?>
     <?= csrf_field() ?>
     <div class="champ">
       <label for="username">Identifiant</label>

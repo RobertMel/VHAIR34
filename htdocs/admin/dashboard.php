@@ -38,6 +38,11 @@ admin_debut('Réservations', 'dashboard');
   <a href="creneaux_add.php" class="b b-plein b-grand">Ajouter un créneau</a>
 </div>
 
+<?php if (strcasecmp($_SESSION['admin_user'] ?? '', 'admin') === 0): ?>
+  <p class="a-msg a-msg-err" role="alert">Ton identifiant est « admin », le premier que les robots essaient. <a href="compte.php">Change ton identifiant et ton mot de passe</a> dès maintenant.</p>
+<?php endif; ?>
+<?php admin_flash(); ?>
+
 <div class="stats">
   <div class="carte stat"><div class="n"><?= count($aVenir) ?></div><div class="l">réservation<?= count($aVenir) > 1 ? 's' : '' ?> à venir</div></div>
   <div class="carte stat"><div class="n"><?= count($libres) ?></div><div class="l">créneau<?= count($libres) > 1 ? 'x' : '' ?> libre<?= count($libres) > 1 ? 's' : '' ?> en ligne</div></div>

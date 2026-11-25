@@ -49,13 +49,23 @@ function csrf_check(): void
     }
 }
 
-/** Redirige vers la connexion si l'admin n'est pas connecté. */
+const ADMIN_INACTIVITE_MAX = 2 * 3600; // déconnexion automatique après 2 h sans activité
+
+/** Redirige vers la connexion si l'admin n'est pas connecté ou inactif depuis trop longtemps. */
 function require_admin(): void
 {
     if (($_SESSION['admin_logged'] ?? false) !== true) {
         header('Location: /admin/login.php');
         exit;
     }
+    $vu = (int) ($_SESSION['admin_vu'] ?? time());
+    if (time() - $vu > ADMIN_INACTIVITE_MAX) {
+        $_SESSION = [];
+        session_regenerate_id(true);
+        header('Location: /admin/login.php?expire=1');
+        exit;
+    }
+    $_SESSION['admin_vu'] = time();
 }
 
 /** Date en français, ex. « Samedi 14 novembre 2026 » (remplace strftime, supprimé de PHP). */

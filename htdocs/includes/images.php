@@ -2,8 +2,10 @@
 // Envoi de photos depuis l'admin : contrôle, redimensionnement et réenregistrement.
 // Chaque photo est réécrite en JPEG par GD : tout contenu caché et les données GPS du téléphone disparaissent.
 
-const IMAGES_DOSSIER = __DIR__ . '/../uploads/meches';
-const IMAGES_URL = '/uploads/meches/';
+// Sous-dossiers de uploads/ autorisés : un par type de contenu
+const IMAGES_RACINE = __DIR__ . '/../uploads/';
+const IMAGES_URL_RACINE = '/uploads/';
+const IMAGES_SOUS_DOSSIERS = ['meches', 'prestations'];
 const IMAGES_TAILLE_MAX = 10 * 1024 * 1024;   // 10 Mo par photo
 const IMAGES_PIXELS_MAX = 40000000;           // 40 mégapixels
 const IMAGES_COTE_MAX = 1600;                 // photo affichée en grand
@@ -30,8 +32,9 @@ function images_liste_envoyees(string $champ): array
  * Contrôle et enregistre une photo envoyée. Retourne le nom du fichier créé (ex. « 9f2c1a7b5e3d4c21.jpg »).
  * Lève une RuntimeException avec un message lisible par la coiffeuse en cas de problème.
  */
-function image_enregistrer(array $fichier): string
+function image_enregistrer(array $fichier, string $sous = 'meches'): string
 {
+    $dossier = images_dossier($sous);
     $nomAffiche = mb_substr((string) $fichier['name'], 0, 60);
 
     if ($fichier['error'] === UPLOAD_ERR_INI_SIZE || $fichier['error'] === UPLOAD_ERR_FORM_SIZE) {
@@ -79,18 +82,18 @@ function image_enregistrer(array $fichier): string
         }
     }
 
-    if (!is_dir(IMAGES_DOSSIER) && !@mkdir(IMAGES_DOSSIER, 0755, true)) {
+    if (!is_dir($dossier) && !@mkdir($dossier, 0755, true)) {
         imagedestroy($src);
         throw new RuntimeException("Le dossier des photos n'a pas pu être créé sur l'hébergement.");
     }
 
     $base = bin2hex(random_bytes(8));
-    $ok = images_ecrire_redimensionnee($src, IMAGES_DOSSIER . "/$base.jpg", IMAGES_COTE_MAX, 82)
-       && images_ecrire_redimensionnee($src, IMAGES_DOSSIER . "/{$base}_t.jpg", IMAGES_COTE_VIGNETTE, 78);
+    $ok = images_ecrire_redimensionnee($src, $dossier . "/$base.jpg", IMAGES_COTE_MAX, 82)
+       && images_ecrire_redimensionnee($src, $dossier . "/{$base}_t.jpg", IMAGES_COTE_VIGNETTE, 78);
     imagedestroy($src);
 
     if (!$ok) {
-        image_supprimer("$base.jpg");
+        image_supprimer("$base.jpg", $sous);
         throw new RuntimeException("« $nomAffiche » n'a pas pu être enregistrée.");
     }
     return "$base.jpg";
@@ -116,22 +119,32 @@ function images_ecrire_redimensionnee($src, string $chemin, int $cote, int $qual
 }
 
 /** Supprime une photo et sa vignette. N'accepte que les noms créés par image_enregistrer(). */
-function image_supprimer(string $fichier): void
+function image_supprimer(string $fichier, string $sous = 'meches'): void
 {
     if (!preg_match('/^([a-f0-9]{16})\.jpg$/', $fichier, $m)) {
         return;
     }
-    foreach ([IMAGES_DOSSIER . "/{$m[1]}.jpg", IMAGES_DOSSIER . "/{$m[1]}_t.jpg"] as $chemin) {
+    $dossier = images_dossier($sous);
+    foreach ([$dossier . "/{$m[1]}.jpg", $dossier . "/{$m[1]}_t.jpg"] as $chemin) {
         if (is_file($chemin)) {
             @unlink($chemin);
         }
     }
 }
 
-function image_url(string $fichier, bool $vignette = false): string
+function image_url(string $fichier, bool $vignette = false, string $sous = 'meches'): string
 {
-    if (!preg_match('/^([a-f0-9]{16})\.jpg$/', $fichier, $m)) {
+    if (!preg_match('/^([a-f0-9]{16})\.jpg$/', $fichier, $m) || !in_array($sous, IMAGES_SOUS_DOSSIERS, true)) {
         return '';
     }
-    return IMAGES_URL . $m[1] . ($vignette ? '_t' : '') . '.jpg';
+    return IMAGES_URL_RACINE . $sous . '/' . $m[1] . ($vignette ? '_t' : '') . '.jpg';
+}
+
+/** Chemin du sous-dossier de uploads/ (liste fermée, jamais construit depuis une saisie). */
+function images_dossier(string $sous): string
+{
+    if (!in_array($sous, IMAGES_SOUS_DOSSIERS, true)) {
+        throw new InvalidArgumentException('Dossier de photos inconnu');
+    }
+    return IMAGES_RACINE . $sous;
 }

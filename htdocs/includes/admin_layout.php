@@ -1,7 +1,7 @@
 <?php
 // En-tête, menu et pied communs aux pages de l'espace admin.
 
-/** $actif = 'dashboard' | 'creneaux' | 'prestations' | 'meches' (onglet surligné). */
+/** $actif = 'dashboard' | 'creneaux' | 'prestations' | 'meches' | 'compte' (onglet surligné). */
 function admin_debut(string $titre, string $actif = ''): void
 {
     $v = @filemtime(__DIR__ . '/../assets/admin.css') ?: 1;
@@ -31,6 +31,7 @@ function admin_debut(string $titre, string $actif = ''): void
     <a href="dashboard.php" class="a-marque"><span class="v" aria-hidden="true">V</span><span class="mot">V.HAIR 34</span><span class="tag">Admin</span></a>
     <div class="a-compte">
       <a href="/" target="_blank" rel="noopener">Voir le site</a>
+      <a href="compte.php"<?= $actif === 'compte' ? ' aria-current="page"' : '' ?>>Mon compte</a>
       <a href="logout.php">Déconnexion</a>
     </div>
   </div>

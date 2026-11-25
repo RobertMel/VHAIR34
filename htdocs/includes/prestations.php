@@ -19,6 +19,16 @@ function prestations_install(PDO $pdo): void
         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS prestation_photos (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        prestation_id INT NOT NULL,
+        fichier VARCHAR(40) NOT NULL,
+        ordre INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_prestation (prestation_id, ordre),
+        CONSTRAINT fk_prestation_photos FOREIGN KEY (prestation_id) REFERENCES prestations(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     if ((int) $pdo->query("SELECT COUNT(*) FROM prestations")->fetchColumn() > 0) {
         return;
     }
@@ -62,21 +72,43 @@ function prestations_query(PDO $pdo, string $sql, array $params = []): PDOStatem
     }
 }
 
-/** Prestations visibles sur le site, dans l'ordre d'affichage. */
-function prestations_actives(PDO $pdo): array
+/** Ajoute à chaque prestation la liste de ses photos (la première = la photo principale). */
+function prestations_avec_photos(PDO $pdo, array $prestations): array
 {
-    return prestations_query($pdo, "SELECT * FROM prestations WHERE actif = 1 ORDER BY ordre ASC, id ASC")->fetchAll();
+    if (!$prestations) {
+        return [];
+    }
+    $ids = array_map(fn($p) => (int) $p['id'], $prestations);
+    $marques = implode(',', array_fill(0, count($ids), '?'));
+    $photos = prestations_query($pdo, "SELECT * FROM prestation_photos WHERE prestation_id IN ($marques) ORDER BY ordre ASC, id ASC", $ids)->fetchAll();
+    $parPrestation = [];
+    foreach ($photos as $ph) {
+        $parPrestation[(int) $ph['prestation_id']][] = $ph;
+    }
+    foreach ($prestations as &$p) {
+        $p['photos'] = $parPrestation[(int) $p['id']] ?? [];
+    }
+    return $prestations;
 }
 
-/** Toutes les prestations, y compris masquées (pour l'admin). */
+/** Prestations visibles sur le site, dans l'ordre d'affichage, avec leurs photos. */
+function prestations_actives(PDO $pdo): array
+{
+    $liste = prestations_query($pdo, "SELECT * FROM prestations WHERE actif = 1 ORDER BY ordre ASC, id ASC")->fetchAll();
+    return prestations_avec_photos($pdo, $liste);
+}
+
+/** Toutes les prestations, y compris masquées (pour l'admin), avec leurs photos. */
 function prestations_toutes(PDO $pdo): array
 {
-    return prestations_query($pdo, "SELECT * FROM prestations ORDER BY ordre ASC, id ASC")->fetchAll();
+    $liste = prestations_query($pdo, "SELECT * FROM prestations ORDER BY ordre ASC, id ASC")->fetchAll();
+    return prestations_avec_photos($pdo, $liste);
 }
 
 function prestation_par_id(PDO $pdo, int $id)
 {
-    return prestations_query($pdo, "SELECT * FROM prestations WHERE id = ?", [$id])->fetch();
+    $p = prestations_query($pdo, "SELECT * FROM prestations WHERE id = ?", [$id])->fetch();
+    return $p ? prestations_avec_photos($pdo, [$p])[0] : false;
 }
 
 /** Texte enregistré avec la réservation, ex. « Ponytail Middle Part – 45 € ». */

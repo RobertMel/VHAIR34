@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/prestations.php';
+require_once __DIR__ . '/includes/images.php';
 require_once __DIR__ . '/includes/layout.php';
 
 $pdo = getPDO();
@@ -85,6 +86,17 @@ site_nav('accueil');
               <?php if (trim((string) $p['description']) !== ''): ?>
                 <p class="presta-desc"><?= nl2br(e($p['description'])) ?></p>
               <?php endif; ?>
+              <?php if ($p['photos']): $nb = count($p['photos']); ?>
+                <div class="presta-photos" data-galerie="<?= e($p['nom']) ?>">
+                  <?php foreach ($p['photos'] as $i => $ph): ?>
+                    <a href="<?= e(image_url($ph['fichier'], false, 'prestations')) ?>" class="presta-photo<?= $i >= 4 ? ' cache' : '' ?>" data-index="<?= $i ?>"
+                       aria-label="Voir la photo <?= $i + 1 ?> sur <?= $nb ?> : <?= e($p['nom']) ?>">
+                      <img src="<?= e(image_url($ph['fichier'], true, 'prestations')) ?>" alt="" width="64" height="64" loading="lazy">
+                      <?php if ($i === 3 && $nb > 4): ?><span class="presta-plus">+<?= $nb - 4 ?></span><?php endif; ?>
+                    </a>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         </div>
@@ -146,13 +158,57 @@ site_nav('accueil');
     </div>
   </section>
 </main>
+<dialog class="visionneuse" id="visionneuse" aria-label="Photo de la prestation">
+  <figure>
+    <img src="" alt="" id="vis-img">
+    <figcaption id="vis-legende"></figcaption>
+  </figure>
+  <div class="vis-actions">
+    <button type="button" class="vis-btn" id="vis-prec" aria-label="Photo précédente"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+    <button type="button" class="vis-btn" id="vis-fermer" aria-label="Fermer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    <button type="button" class="vis-btn" id="vis-suiv" aria-label="Photo suivante"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+  </div>
+</dialog>
 <?php
 site_pied();
-// Confort : afficher les créneaux suivants sans recharger la page (le lien fonctionne aussi sans JavaScript)
+// Confort : créneaux suivants sans recharger la page, et visionneuse des photos de prestations.
+// Sans JavaScript, le lien « Afficher plus » recharge la page et une vignette ouvre la photo.
 page_fin(<<<'JS'
 document.getElementById('plus-creneaux')?.addEventListener('click', function (e) {
   e.preventDefault();
   document.querySelectorAll('#liste-creneaux .cache').forEach(function (el) { el.classList.remove('cache'); });
   this.parentElement.remove();
 });
+(function () {
+  var vis = document.getElementById('visionneuse');
+  if (!vis || typeof vis.showModal !== 'function') return;
+  var img = document.getElementById('vis-img'), legende = document.getElementById('vis-legende');
+  var liens = [], pos = 0, titre = '';
+  function montrer(i) {
+    pos = (i + liens.length) % liens.length;
+    img.src = liens[pos].href;
+    img.alt = titre + ', photo ' + (pos + 1);
+    legende.textContent = titre + (liens.length > 1 ? ' · ' + (pos + 1) + ' / ' + liens.length : '');
+    document.getElementById('vis-prec').hidden = document.getElementById('vis-suiv').hidden = liens.length < 2;
+  }
+  document.querySelectorAll('.presta-photos').forEach(function (g) {
+    g.querySelectorAll('.presta-photo').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        liens = Array.prototype.slice.call(g.querySelectorAll('.presta-photo'));
+        titre = g.dataset.galerie;
+        montrer(+a.dataset.index);
+        vis.showModal();
+      });
+    });
+  });
+  document.getElementById('vis-prec').addEventListener('click', function () { montrer(pos - 1); });
+  document.getElementById('vis-suiv').addEventListener('click', function () { montrer(pos + 1); });
+  document.getElementById('vis-fermer').addEventListener('click', function () { vis.close(); });
+  vis.addEventListener('click', function (e) { if (e.target === vis) vis.close(); });
+  vis.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowLeft') montrer(pos - 1);
+    if (e.key === 'ArrowRight') montrer(pos + 1);
+  });
+})();
 JS);

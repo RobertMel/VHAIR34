@@ -17,10 +17,12 @@ Site de réservation de créneaux pour V.Hair_34, coiffeuse à Montpellier (pony
   - `includes/prestations.php` : accès à la table `prestations` (créée et pré-remplie automatiquement au premier chargement)
   - `admin/prestations.php` : la coiffeuse ajoute, modifie, masque ou supprime ses prestations
   - `admin/meches.php` : la coiffeuse gère ses mèches et leurs photos (plusieurs par mèche)
+  - `admin/compte.php` : changement d'identifiant et de mot de passe (règles de robustesse)
+  - `includes/securite.php` : blocage après 5 connexions ratées / 15 min (table `connexions_ratees`), règles de mot de passe
   - `includes/meches.php` : tables `meches` et `meche_photos` (créées automatiquement), colonnes `avec_meches` et `meche` ajoutées à `creneaux` si besoin
   - `includes/images.php` : contrôle des photos envoyées, redimensionnement (1600 px + vignette 480 px), données GPS retirées
   - `includes/layout.php` : menu et pied de page communs du site ; `includes/admin_layout.php` + `assets/admin.css` : en-tête, menu et style de l'admin
-  - `uploads/meches/` : photos envoyées depuis l'admin (non versionnées, `.htaccess` interdit l'exécution de scripts)
+  - `uploads/meches/`, `uploads/prestations/` : photos envoyées depuis l'admin (non versionnées, `.htaccess` interdit l'exécution de scripts)
 - `ancienne-maquette-html/` : premier prototype statique (localStorage), conservé pour référence
 
 ## Installation
@@ -30,4 +32,4 @@ Site de réservation de créneaux pour V.Hair_34, coiffeuse à Montpellier (pony
 ## Déploiement sur InfinityFree
 Envoyer tout le contenu de `htdocs/` dans le dossier `htdocs/` de l'hébergement (FTP ou gestionnaire de fichiers),
 **y compris `config.php`** qui n'est que sur ta machine.
-Ne jamais écraser le dossier `uploads/meches/` en ligne : il contient les photos envoyées par la coiffeuse.
+Ne jamais écraser les dossiers `uploads/meches/` et `uploads/prestations/` en ligne : il contient les photos envoyées par la coiffeuse.

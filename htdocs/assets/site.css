@@ -97,6 +97,25 @@ a:focus-visible, button:focus-visible, input:focus-visible, label:focus-within {
 .presta-detail { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 20px; margin-top: 4px; font-size: 15px; font-weight: 300; line-height: 1.6; color: var(--texte-doux); }
 .presta-desc { margin: 6px 0 0; font-size: 14px; font-weight: 300; line-height: 1.6; color: var(--texte-doux); }
 
+/* Photos des prestations */
+.presta-photos { display: flex; gap: 8px; margin-top: 10px; }
+.presta-photo { position: relative; display: block; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; flex: 0 0 auto; transition: transform 160ms var(--ease-out); }
+.presta-photo:active { transform: scale(0.97); }
+.presta-photo img { width: 100%; height: 100%; object-fit: cover; }
+.presta-photo.cache { display: none; }
+.presta-plus { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(46, 14, 17, 0.55); color: var(--ivoire); font-size: 16px; font-weight: 500; }
+.visionneuse { width: min(92vw, 720px); max-height: 92vh; padding: 0; border: 0; border-radius: 10px; background: var(--ivoire); color: var(--bordeaux); }
+.visionneuse::backdrop { background: rgba(46, 14, 17, 0.75); }
+.visionneuse[open] { animation: vhPopup 220ms var(--ease-out) both; }
+.visionneuse figure { margin: 0; }
+.visionneuse img { width: 100%; max-height: 74vh; object-fit: contain; background: var(--lin); }
+.visionneuse figcaption { padding: 12px 16px 0; font-size: 15px; text-align: center; }
+.vis-actions { display: flex; justify-content: center; gap: 12px; padding: 12px; }
+.vis-btn { width: 48px; height: 48px; border-radius: 999px; border: 1px solid var(--bordeaux); background: transparent; color: var(--bordeaux); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 160ms var(--ease-out); }
+.vis-btn:active { transform: scale(0.95); }
+.vis-btn[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .visionneuse[open] { animation: none; } }
+
 /* Avant de venir */
 .regles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); gap: 36px 56px; max-width: 980px; margin: 0 auto; }
 .regle { display: flex; gap: 18px; align-items: flex-start; }

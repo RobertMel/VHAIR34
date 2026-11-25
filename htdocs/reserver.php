@@ -160,6 +160,7 @@ page_debut('Réserver le ' . date_fr($creneau['date']) . ' — V.Hair 34');
         <?php foreach ($prestations as $p): ?>
           <label class="choix">
             <input type="radio" name="prestation" value="<?= (int) $p['id'] ?>" <?= (string) $p['id'] === $prestation ? 'checked' : '' ?>>
+            <?php if ($p['photos']): ?><img src="<?= e(image_url($p['photos'][0]['fichier'], true, 'prestations')) ?>" alt="" width="44" height="44" loading="lazy"><?php endif; ?>
             <span class="choix-nom">
               <span class="choix-titre"><?= e($p['nom']) ?></span>
               <?php if ($p['prix'] !== ''): ?><span class="choix-sous"><?= prix($p['prix']) ?></span><?php endif; ?>
